@@ -11,6 +11,7 @@
 @interface CardMatchingGame()
 @property (nonatomic, readwrite) NSInteger score;
 @property (nonatomic, strong) NSMutableArray *cards;
+@property (nonatomic, strong) NSMutableArray* selectedCards;
 @end
 
 @implementation CardMatchingGame
@@ -22,6 +23,16 @@ const static int COST_TO_CHOOSE = 1;
 - (NSMutableArray *) cards {
     if (!_cards) _cards = [[NSMutableArray alloc] init];
     return _cards;
+}
+
+- (NSInteger) maxSelectedCards {
+    if (!_maxSelectedCards) _maxSelectedCards = 2;
+    return _maxSelectedCards;
+}
+
+- (NSMutableArray*) selectedCards {
+    if (!_selectedCards) _selectedCards = [[NSMutableArray alloc] init];
+    return _selectedCards;
 }
 
 - (instancetype) initWithCardCount:(NSUInteger)count usingDeck:(Deck *)deck {
@@ -49,33 +60,39 @@ const static int COST_TO_CHOOSE = 1;
 
 - (void) chooseCardAtIndex:(NSUInteger)index {
     Card *card = [self cardAtIndex:index];
-
+    
     if (card.isMatched) return;
     
-    if (card.isChosen) {
+    if ([self.selectedCards containsObject:card]) {
         card.chosen = NO;
+        [self.selectedCards removeObject:card];
         return;
     }
-
-    for (Card *otherCard in self.cards) {
-        if (otherCard.isChosen && !otherCard.isMatched) {
-            int matchScore = [card match:@[otherCard]];
-            
-            if (matchScore) {
-                self.score += matchScore * MATCH_BONUS;
-                
-                card.matched = otherCard.matched = YES;
-            } else {
-                self.score -= MISMATCH_PENALTY;
-                otherCard.chosen = NO;
-            }
-            
-            break;
-        }
-    }
     
+    [self.selectedCards addObject:card];
+
     self.score -= COST_TO_CHOOSE;
     card.chosen = YES;
+    
+    if ([self.selectedCards count] < self.maxSelectedCards) return;
+    
+    NSArray* otherCards = [self.selectedCards subarrayWithRange:NSMakeRange(1, self.maxSelectedCards - 1)];
+    
+    int matchScore = [[self.selectedCards firstObject] match:otherCards];
+    
+    if (matchScore) {
+        self.score += matchScore * MATCH_BONUS;
+        
+        for (Card* c in self.selectedCards) c.matched = YES;
+        
+        self.selectedCards = [[NSMutableArray alloc] init];
+    } else {
+        self.score -= MISMATCH_PENALTY;
+        for (Card* c in otherCards) {
+            c.chosen = NO;
+            [self.selectedCards removeObject:c];
+        }
+    }
 }
 
 

@@ -39,9 +39,15 @@
 - (CardMatchingGame *) game {
     if (!_game) {
         _game = [[CardMatchingGame alloc] initWithCardCount:[self.cardButtons count] usingDeck:[self createDeck]];
-    }
-                 
+}
+    
     return _game;
+}
+
+
+- (IBAction)gameModeButton:(UISegmentedControl *)sender {
+    NSLog(@"button! %li", (long)sender.selectedSegmentIndex);
+    self.game.maxSelectedCards = sender.selectedSegmentIndex + 2;
 }
 
                  
